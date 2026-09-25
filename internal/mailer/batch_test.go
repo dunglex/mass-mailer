@@ -3,6 +3,7 @@ package mailer
 import (
 	"bytes"
 	"html/template"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -101,6 +102,38 @@ func TestCreateBatchPersistsCopyRecipients(t *testing.T) {
 	}
 	if !reflect.DeepEqual(batch.Bcc, []string{"<hidden@example.com>"}) {
 		t.Errorf("Bcc = %#v", batch.Bcc)
+	}
+}
+
+func TestCreateBatchRejectsOversizedMultipartRequest(t *testing.T) {
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	field, err := writer.CreateFormField("receivers")
+	if err != nil {
+		t.Fatalf("create receivers field: %v", err)
+	}
+	if _, err := field.Write(bytes.Repeat([]byte("x"), maxBatchRequestSize)); err != nil {
+		t.Fatalf("write receivers field: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close multipart writer: %v", err)
+	}
+
+	request := httptest.NewRequest(http.MethodPost, "/batches", &body)
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	response := httptest.NewRecorder()
+	app := &App{}
+
+	app.createBatch(response, request)
+
+	if response.Code != http.StatusSeeOther {
+		t.Fatalf("status = %d, want %d", response.Code, http.StatusSeeOther)
+	}
+	if len(app.store.Batches) != 0 {
+		t.Fatalf("oversized request persisted batches: %#v", app.store.Batches)
+	}
+	if location := response.Header().Get("Location"); !strings.Contains(location, "request+body+too+large") {
+		t.Fatalf("Location = %q, want request body too large error", location)
 	}
 }
 

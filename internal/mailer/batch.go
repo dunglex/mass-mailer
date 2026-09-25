@@ -20,6 +20,8 @@ import (
 	ttemplate "text/template"
 )
 
+const maxBatchRequestSize = 10 << 20
+
 func (app *App) newBatch(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.NotFound(w, r)
@@ -38,7 +40,8 @@ func (app *App) createBatch(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if err := r.ParseMultipartForm(10 << 20); err != nil && !errors.Is(err, http.ErrNotMultipart) {
+	r.Body = http.MaxBytesReader(w, r.Body, maxBatchRequestSize)
+	if err := r.ParseMultipartForm(maxBatchRequestSize); err != nil && !errors.Is(err, http.ErrNotMultipart) {
 		app.redirect(w, r, err)
 		return
 	}
