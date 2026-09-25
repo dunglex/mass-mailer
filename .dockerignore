@@ -1,0 +1,9 @@
+.git
+data/
+*.exe
+.agents
+.codex
+.claude
+.env
+Makefile
+README.md

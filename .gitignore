@@ -1,1 +1,14 @@
-mass-mailer.exe
+# Root-level binaries produced by `go build`.
+/mass-mailer
+/mass-mailer.exe
+# Keep the data/ directory itself tracked but ignore its contents.
+data/*
+!data/.gitkeep
+.env
+
+# Internal deployment assets are maintained outside this repository.
+/.plan/
+/azure-pipelines.yml
+/cmd/entrypoint/
+/scripts/
+/hcvn-web-ca.crt
