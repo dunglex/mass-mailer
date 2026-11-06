@@ -1,0 +1,44 @@
+services:
+  mailer:
+    build: .
+    ports:
+      - "${PORT:-8080}:8080"
+    volumes:
+      - ./data:/data
+      - ./attachments:/attachments:ro
+    environment:
+      PORT: 8080
+      DATA_DIR: /data
+      AUTH_USER: ${AUTH_USER:-admin}
+      AUTH_PASSWORD: ${AUTH_PASSWORD:-changeme}
+      # Seed the Server settings page when no settings have been saved yet.
+      # .env.example ships values pointing at the Mailpit service below, so a
+      # fresh stack can send immediately. Saving from the web interface
+      # persists to ./data and overrides these on later boots.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_ENCRYPTION: ${SMTP_ENCRYPTION:-}
+    entrypoint: /mass-mailer
+    restart: unless-stopped
+
+  # Local SMTP sink for testing: catches every message instead of delivering it.
+  # SMTP on 1025, web UI on http://localhost:8025
+  # Start with: docker compose --profile dev up
+  mailpit:
+    image: axllent/mailpit
+    profiles:
+      - dev
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+    environment:
+      # Keep captured mail across restarts; drop this for an ephemeral sink.
+      MP_DATABASE: /data/mailpit.db
+    volumes:
+      - mailpit-data:/data
+    restart: unless-stopped
+
+volumes:
+  mailpit-data:

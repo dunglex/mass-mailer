@@ -1,0 +1,76 @@
+{{define "batch-detail"}}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{.Batch.Name}} · Mass Mailer</title>
+{{template "layout-head" .}}
+</head>
+<body>
+<header>
+<div><h1>Mass Mailer</h1><p>Batch detail and delivery history.</p></div>
+<a class="button alt" href="/">Back to batches</a>
+</header>
+<main>
+{{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+<div class="topline">
+<div>
+<h2>{{.Batch.Name}}</h2>
+<p class="meta">
+{{len .Batch.Receivers}} receivers · From {{.Batch.SenderName}} &lt;{{.Batch.SenderEmail}}&gt;
+{{if .Batch.Cc}}<br>Cc: {{range $index, $address := .Batch.Cc}}{{if $index}}, {{end}}{{$address}}{{end}}{{end}}
+{{if .Batch.Bcc}}<br>Bcc: {{range $index, $address := .Batch.Bcc}}{{if $index}}, {{end}}{{$address}}{{end}}{{end}}
+<br>Schedule: {{if .Batch.Schedule}}{{.Batch.Schedule}}{{else}}Manual{{end}}
+</p>
+</div>
+<div class="actions">
+{{if .DeliveryLabel}}<form method="post" action="/batches/{{.Batch.ID}}/deliver"><button>{{.DeliveryLabel}}</button></form>{{end}}
+<form method="post" action="/batches/{{.Batch.ID}}/delete"><button class="danger">Delete</button></form>
+</div>
+</div>
+
+<section class="form">
+<h3>Send test</h3>
+<form class="actions" method="post" action="/batches/{{.Batch.ID}}/test">
+<input type="email" name="test_email" placeholder="test@example.com" required>
+<button class="alt">Send test</button>
+</form>
+</section>
+
+<section>
+<div class="topline"><h3>Recipients</h3><span class="meta">{{.TotalMatches}} matches · Page {{.Page}} of {{.TotalPages}}</span></div>
+<form class="filters" method="get">
+<input name="q" value="{{.Query}}" placeholder="Search name, email, or other fields">
+<select name="status">
+<option value="">All statuses</option>
+<option value="pending" {{if eq .StatusFilter "pending"}}selected{{end}}>Pending</option>
+<option value="sent" {{if eq .StatusFilter "sent"}}selected{{end}}>Sent</option>
+<option value="failed" {{if eq .StatusFilter "failed"}}selected{{end}}>Failed</option>
+</select>
+<button>Filter</button>
+</form>
+{{if .Recipients}}
+<table class="log">
+<thead><tr><th>Name</th><th>Email</th><th>Last attempt</th><th>Type</th><th>Status</th><th>Message</th></tr></thead>
+<tbody>
+{{range .Recipients}}<tr>
+<td>{{receiverName .Receiver}}</td>
+<td>{{index .Receiver "email"}}</td>
+<td>{{if .HasAttempt}}{{.AttemptedAt.Format "2006-01-02 15:04:05"}}{{else}}Never{{end}}</td>
+<td>{{if .HasAttempt}}{{.AttemptKind}}{{else}}—{{end}}</td>
+<td class="status-{{if eq .Status "Sent"}}sent{{else if eq .Status "Failed"}}failed{{else}}pending{{end}}">{{.Status}}</td>
+<td>{{.Message}}</td>
+</tr>{{end}}
+</tbody>
+</table>
+<nav class="pagination">
+{{if .PreviousPage}}<a class="button alt" href="?q={{urlquery .Query}}&amp;status={{urlquery .StatusFilter}}&amp;page={{.PreviousPage}}">Previous</a>{{end}}
+{{if .NextPage}}<a class="button alt" href="?q={{urlquery .Query}}&amp;status={{urlquery .StatusFilter}}&amp;page={{.NextPage}}">Next</a>{{end}}
+</nav>
+{{else}}<p class="empty">No recipients match these filters.</p>{{end}}
+</section>
+</main>
+</body>
+</html>
+{{end}}
