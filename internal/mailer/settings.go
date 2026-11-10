@@ -33,9 +33,7 @@ func (app *App) settings(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		app.mu.Lock()
 		defer app.mu.Unlock()
-		if err := app.tmpl.ExecuteTemplate(w, "settings", PageData{Store: app.store, Flash: r.URL.Query().Get("flash")}); err != nil {
-			log.Printf("render settings: %v", err)
-		}
+		app.renderPage(w, "settings", PageData{Store: app.store, Flash: r.URL.Query().Get("flash")})
 		return
 	}
 	if r.Method != http.MethodPost {

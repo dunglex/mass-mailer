@@ -2,6 +2,7 @@ package mailer
 
 import (
 	"html/template"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -93,6 +94,12 @@ func nonEmptyLines(text string) []string {
 		}
 	}
 	return lines
+}
+
+func (app *App) renderPage(w http.ResponseWriter, name string, data any) {
+	if err := app.tmpl.ExecuteTemplate(w, name, data); err != nil {
+		log.Printf("render %s: %v", name, err)
+	}
 }
 
 func (app *App) redirect(w http.ResponseWriter, r *http.Request, err error) {
